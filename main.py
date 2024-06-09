@@ -55,7 +55,8 @@ s1.preliminary_computes()
 s2.preliminary_computes()
 # Start the programs tracking and adjusting audio levels based on it
 while True:
-    userPosition = np.array(p.read())
+    #userPosition = np.array(p.read())
+    userPosition = p.read()
     #print(userPosition)
     #user_Orientation = np.array(o.read())
     #start_time = time.time()
