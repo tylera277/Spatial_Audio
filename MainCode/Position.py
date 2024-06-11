@@ -1,6 +1,8 @@
 
 import serial
 import json
+import time
+
 
 class Position:
 
@@ -19,52 +21,61 @@ class Position:
 
         
         self.port_of_pico_string = picoPortString
-        self.ser = serial.Serial("{}".format(self.port_of_pico_string), 115200, 8, "N", 1)#, timeout=.001)
+        self.ser = serial.Serial(port="{}".format(self.port_of_pico_string), baudrate=115200, bytesize=8, parity="N", stopbits=1)#, timeout=.001)
         self.temp_storage = "(0, 0, 0)"
 
         self.current_data = str()
         self.clear_status = False
         self.first_time = True
+        self.distance_value = 0
 
     def set_anchors(self):
         pass
     def sift_distance_value(self, string):
-        """{"Block":3948, "results":[{"Addr":"0x0001","St
-        atus":"Ok","D_cm":71,"LPDoA_deg":0.00,"LAoA_deg":0.00,"LFoM":0,"
-        RAoA_deg":0.00,"CFO_100ppm":622},{"Addr":"0x0002","Status":"Err"
-        }]}"""
+        """ 
+        Changing the raw value that comes printed from the UWB positioning
+        module into something I can query for the main program to be able to use
+        """
 
-        # One way of (eventually) getting the info I need (the distance value)
-        #print(string.find("D_cm"))
-        #print(string[58:72])
-        
-        string = string.replace(" ", "")
-        
+        # For some reason, putting the string into a multiline comment works 
+        string = """{}""".format(self.current_data)
+
+        # Convert the json string to a dictionary
         dict_from_string = json.loads(string)
-        #print(dict_from_string)
+
+        # Try to get the distance value from the dictionary, if its not there for some 
+        # reason or if the formatting was messed up once, just return the previous value
+        # it got and update it when its next possible
+        newdict = dict(dict_from_string['results'][0])
+        try:
+            self.distance_value = newdict['D_cm']
+            return self.distance_value
+        except:
+            return self.distance_value        
+
+
+    def read(self, outputQueue):
         
-
-
-    def read(self):
-        #line = self.ser.readline()
-        #print("Line: ", line.decode("utf-8"))
         if self.clear_status == True:
             self.current_data = str()
             self.clear_status = False
 
-        if self.ser.in_waiting:
+        if self.ser.inWaiting:
             data = self.ser.readline().decode('utf-8')
             datas = data.split("\n")
 
             for i,  line in enumerate(datas):
+                if self.first_time == False:
+                    self.clear_status = True
+                    self.current_data += str(line)
 
                 if line.strip() == "":
-                    if self.first_time == False:
-                        self.clear_status = True
-                        self.current_data += str(line)
+                    if(self.first_time==False):
+                        distance = self.sift_distance_value(self.current_data)
+                        outputQueue.put((distance))
                         #return distance
 
-            self.first_time = False
+        time.sleep(0.001)
+        
+        self.first_time = False
             
-
-            #return data
