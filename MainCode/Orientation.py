@@ -13,9 +13,10 @@ class Orientation:
     """
     def __init__(self, picoPortString):
         self.port_of_pico_string = picoPortString
-        self.ser = serial.Serial("{}".format(self.port_of_pico_string), 9600, 8, "N", 1)#, timeout=.001)
+        self.ser = serial.Serial("{}".format(self.port_of_pico_string), 9600, 8, "N", 1, timeout=.001)
         self.temp_storage = "(0, 0, 0)"
 
+        self.running = True
 
 
 
@@ -24,9 +25,7 @@ class Orientation:
         # professional
 
         chunks = data
-        chunks = chunks.replace(",", "")
-        chunks = chunks.replace("(", "")
-        chunks = chunks.replace(")", "")
+        chunks = chunks.replace(",", "").replace("(", "").replace(")", "")
 
         try:
             chunks.split()[2]
@@ -38,25 +37,30 @@ class Orientation:
     def read(self, outputQueue):
         # Used for getting the orientation data from my Raspberry Pi Pico 
         # which is hooked up to the BNO055 sensor that gets the orientation data
+        #time.sleep(0.001)
+        while self.running:
+            if self.ser.inWaiting:
+                data = self.ser.readline().decode('utf-8').strip()
+                #self.temp_storage = data
+                #print(data)
+                #print('----------')
+                result = self.clean_up_orientation_vector(data)
+                if (result == False):
+                    #return self.temp_storage
+                    #print(self.temp_storage)
+                    outputQueue.put((self.temp_storage))
+                else:
+                    self.temp_storage = result
+            #print(self.temp_storage)
+            outputQueue.put((self.temp_storage))
+
+            #print(self.temp_storage)
+            #return self.temp_storage
         time.sleep(0.001)
-        if self.ser.inWaiting:
-            data = self.ser.readline().decode('utf-8').strip()
-            #self.temp_storage = data
-            print(data)
-            #print('----------')
-            result = self.clean_up_orientation_vector(data)
-            if (result == False):
-                #return self.temp_storage
-                #print(self.temp_storage)
-                outputQueue.put((self.temp_storage))
-            else:
-                self.temp_storage = result
-        
-        outputQueue.put((self.temp_storage))
 
-        #print(self.temp_storage)
-        #return self.temp_storage
-
+    def stop(self):
+        self.running = False
+        self.ser.close()
     
     def getUserOrientation(self):
         pass

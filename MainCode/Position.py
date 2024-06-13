@@ -29,6 +29,8 @@ class Position:
         self.first_time = True
         self.distance_value = 0
 
+        self.running = True
+
     def set_anchors(self):
         pass
     def sift_distance_value(self, string):
@@ -56,26 +58,34 @@ class Position:
 
     def read(self, outputQueue):
         
-        if self.clear_status == True:
-            self.current_data = str()
-            self.clear_status = False
+        while self.running:
+            if self.clear_status == True:
+                self.current_data = str()
+                self.clear_status = False
 
-        if self.ser.inWaiting:
-            data = self.ser.readline().decode('utf-8')
-            datas = data.split("\n")
+            if self.ser.inWaiting:
+                start_time = time.time()
+                data = self.ser.readline().decode('utf-8')
+                datas = data.split("\n")
 
-            for i,  line in enumerate(datas):
-                if self.first_time == False:
-                    self.clear_status = True
-                    self.current_data += str(line)
+                for i,  line in enumerate(datas):
+                    if self.first_time == False:
+                        self.clear_status = True
+                        self.current_data += str(line)
 
-                if line.strip() == "":
-                    if(self.first_time==False):
-                        distance = self.sift_distance_value(self.current_data)
-                        outputQueue.put((distance))
-                        #return distance
+                    if line.strip() == "":
+                        if(self.first_time==False):
+                            
+                            distance = self.sift_distance_value(self.current_data)
+                            #print("Finished:", time.time()-start_time)
+                            outputQueue.put((distance))
+                            #print(distance)
+                            #return distance
 
-        time.sleep(0.001)
-        
-        self.first_time = False
+            time.sleep(0.001)
             
+            self.first_time = False
+
+    def stop(self):
+        self.running = False
+        self.ser.close()
