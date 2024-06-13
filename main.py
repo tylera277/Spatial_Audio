@@ -10,9 +10,11 @@ from MainCode.Position import Position
 import numpy as np
 
 import time
+import threading
+import queue
 
-#pico_port = "/dev/cu.usbmodem14101"
-uwb_port_string = "/dev/cu.usbmodemC9513A4E085C1"
+orientation_pico_port = "/dev/cu.usbmodem14101"
+position_uwb_port_string = "/dev/cu.usbmodemC9513A4E085C1"
 #desiredOutputDevice = 3
 
 
@@ -26,8 +28,8 @@ positionOfSound2[0,1] = -2
 
 
 # Instantiate each classes object
-#o = Orientation(pico_port)
-p = Position(uwb_port_string)
+o = Orientation(orientation_pico_port)
+p = Position(position_uwb_port_string)
 s1 = Sound(buffer_size=512, outputDevice=2)
 s2 = Sound(buffer_size=512, outputDevice=2)
 
@@ -50,19 +52,68 @@ Sound.create_sound_source(filename, positionVectorOfItsLocation)
 .
 .
 """
+# For taking in the 
+positionQueue = queue.Queue()
+orientationQueue = queue.LifoQueue()
 
 s1.preliminary_computes()
 s2.preliminary_computes()
-# Start the programs tracking and adjusting audio levels based on it
-while True:
-    #userPosition = np.array(p.read())
-    userPosition = p.read()
-    #print(userPosition)
-    #user_Orientation = np.array(o.read())
-    #start_time = time.time()
-    #s1.output_sound_to_user(user_Orientation) 
-    #s2.output_sound_to_user(user_Orientation)
-    #print("End time: ", time.time() - start_time)
-    #print(user_Orientation)
-    #time.sleep(.001)
-    #print("-----------------")
+
+threads = []
+posThread = threading.Thread(target=p.read, args=(positionQueue,))
+posThread.daemon = True
+posThread.start()
+
+orientThread = threading.Thread(target=o.read, args=(orientationQueue,))
+orientThread.daemon = True
+orientThread.start()
+
+# Give time for threads to start collecting sensor data before the main program starts up
+time.sleep(0.1)
+
+
+# An initial grab of a position value from the queue to use at the start of the loop
+userPositionStorage = positionQueue.get()
+print("beep")
+try:
+
+    while True:
+        
+        start_time = time.time()
+        #print("Orient:", orientationQueue.get())
+
+        # This whole storing of the position and requeueing, if neccessary, is needed
+        # because the UWB positioning devuce Im using can only send values every 50ms,
+        # so if the position queue runs empty, use a previous value till it fills up with another 
+        # position value.
+        # (Position value update frequency, I dont think, is AS important as orientation readings are 
+        # for the intended experience)
+        
+        print("Position:", userPositionStorage)
+        if positionQueue.empty():
+            positionQueue.put(userPositionStorage)
+        else:
+            userPositionStorage = positionQueue.get()
+
+        userOrientation = orientationQueue.get()
+        print("Orientation:", userOrientation)
+        s1.output_sound_to_user(userOrientation) 
+        #s2.output_sound_to_user(userOrientation)
+        print("END TIME: ", time.time() - start_time)
+        print('--------')
+    """
+        t = threading.Thread(target=o.read, args=(positionQueue,))
+        t.daemon = True
+        t.start()
+        print(positionQueue.get())
+    """
+
+        #s = threading.Thread(target=p.read())
+        #s.daemon = True
+        #s.start()
+except KeyboardInterrupt:
+    print("Program interrupted. Exiting...")
+    o.stop()
+    p.stop()
+    orientThread.join()
+    posThread.join()

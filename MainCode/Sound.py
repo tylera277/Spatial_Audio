@@ -96,7 +96,7 @@ class Sound:
    
     
     def compute(self, users_orientation_vector):
-        
+        start_time = time.time()
         angle = Math().angle_compute(self.sound_source_1.get_vector_position_of_sound(), users_orientation_vector)
 
         time_delay = Math().ITD(1, self.SPEED_OF_SOUND,  angle)
@@ -141,7 +141,7 @@ class Sound:
                     self.amp_left = (amp_diff * self.amp_right) + 0.1
             else:
                 print("PANIC!")
-
+        #print("ENd time: ", time.time() - start_time)
         #print("Delays: ", self.total_delay_left/1E3, ", ", self.total_delay_right/1E3)
         self.frame_delay = frame_delay
 
