@@ -30,8 +30,8 @@ positionOfSound2[0,1] = -2
 # Instantiate each classes object
 o = Orientation(orientation_pico_port)
 p = Position(position_uwb_port_string)
-s1 = Sound(buffer_size=512, outputDevice=2)
-s2 = Sound(buffer_size=512, outputDevice=2)
+s1 = Sound(buffer_size=1024, outputDevice=2)
+s2 = Sound(buffer_size=1024, outputDevice=2)
 
 # Define where are the 3x UWB location anchors that are being used 
 # (will be used for position data eventually)
@@ -89,18 +89,18 @@ try:
         # (Position value update frequency, I dont think, is AS important as orientation readings are 
         # for the intended experience)
         
-        print("Position:", userPositionStorage)
+        #print("Position:", userPositionStorage)
         if positionQueue.empty():
             positionQueue.put(userPositionStorage)
         else:
             userPositionStorage = positionQueue.get()
 
         userOrientation = orientationQueue.get()
-        print("Orientation:", userOrientation)
+        #print("Orientation:", userOrientation)
         s1.output_sound_to_user(userOrientation) 
         #s2.output_sound_to_user(userOrientation)
-        print("END TIME: ", time.time() - start_time)
-        print('--------')
+        #print("END TIME: ", time.time() - start_time)
+        #print('--------')
     """
         t = threading.Thread(target=o.read, args=(positionQueue,))
         t.daemon = True

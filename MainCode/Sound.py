@@ -98,27 +98,30 @@ class Sound:
     def compute(self, users_orientation_vector):
         start_time = time.time()
         angle = Math().angle_compute(self.sound_source_1.get_vector_position_of_sound(), users_orientation_vector)
-
+        #print("ANGLE: ", np.degrees(angle))
         time_delay = Math().ITD(1, self.SPEED_OF_SOUND,  angle)
 
         frame_delay = int(time_delay * self.wf.getframerate())
+        #print("FRAME DELAY: ", frame_delay)
         distance = np.linalg.norm(self.sound_source_1.get_vector_position_of_sound())
         amp_falloff_distance = 1/np.power(distance, 2)
 
-        self.amp_left = amp_falloff_distance
-        self.amp_right = amp_falloff_distance
+        self.amp_left =1# amp_falloff_distance
+        self.amp_right =1# amp_falloff_distance
 
-        amp_diff = Math().ILD(angle)
-
+        amp_diff = np.abs(Math().ILD(angle))
+        print('---------------')
+        print("Delay: ", frame_delay)
         direction_of_sound = angle
-        if self.frame_delay != frame_delay:
+        if frame_delay != self.frame_delay:
             diff = frame_delay - self.frame_delay
-            #print("Diff:", diff)
-            #print("Delays: ", self.total_delay_left, ", ", self.total_delay_right)
-            #print("Deg: ", np.degrees(angle))
-            #print("-------------")
+            
+            
             delay = np.zeros((abs(diff)))
-
+            print("DIFF: ", diff, "ANGLE: ", np.degrees(angle))
+            time.sleep(1)
+        
+            
             if (direction_of_sound >= 0) and (direction_of_sound < np.pi):
                 if diff > 0:
                     self.total_delay_left += time_delay
