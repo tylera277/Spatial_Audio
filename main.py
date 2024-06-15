@@ -96,7 +96,7 @@ try:
             userPositionStorage = positionQueue.get()
 
         userOrientation = orientationQueue.get()
-        #print("Orientation:", userOrientation)
+        #dprint("Orientation:", userOrientation)
         s1.output_sound_to_user(userOrientation) 
         #s2.output_sound_to_user(userOrientation)
         #print("END TIME: ", time.time() - start_time)
